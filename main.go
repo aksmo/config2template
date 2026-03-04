@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -9,12 +8,14 @@ import (
 	"strings"
 
 	"config2template/converter"
+	"config2template/format"
 )
 
 func main() {
-	input := flag.String("input", "", "Input JSON config file (required)")
+	input := flag.String("input", "", "Input config file — .json, .yaml/.yml, .toml (required)")
 	output := flag.String("output", "", "Output template file (default: <input>.tpl)")
 	env := flag.String("env", "", "Output env file (default: <input>.env)")
+	fmtFlag := flag.String("format", "", "Force input format: json, yaml, toml (default: auto-detect from extension)")
 	flag.Parse()
 
 	if *input == "" {
@@ -23,15 +24,28 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Determine format
+	var fmt_ format.Format
+	if *fmtFlag != "" {
+		fmt_ = format.Format(*fmtFlag)
+	} else {
+		var err error
+		fmt_, err = format.Detect(*input)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	// Read and parse input
 	raw, err := os.ReadFile(*input)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error reading %s: %v\n", *input, err)
 		os.Exit(1)
 	}
-
-	var config map[string]interface{}
-	if err := json.Unmarshal(raw, &config); err != nil {
-		fmt.Fprintf(os.Stderr, "error parsing JSON: %v\n", err)
+	config, err := format.Parse(raw, fmt_)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error parsing %s: %v\n", fmt_, err)
 		os.Exit(1)
 	}
 
@@ -42,12 +56,12 @@ func main() {
 	if tplPath == "" {
 		tplPath = *input + ".tpl"
 	}
-	tplData, err := json.MarshalIndent(result.Template, "", "  ")
+	tplData, err := format.Serialize(result.Template, fmt_)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error marshaling template: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error serializing template: %v\n", err)
 		os.Exit(1)
 	}
-	if err := os.WriteFile(tplPath, append(tplData, '\n'), 0644); err != nil {
+	if err := os.WriteFile(tplPath, tplData, 0644); err != nil {
 		fmt.Fprintf(os.Stderr, "error writing template: %v\n", err)
 		os.Exit(1)
 	}

@@ -8,7 +8,7 @@ Useful for safely committing config templates to version control (no secrets) wh
 
 - **String** leaf values → replaced with `${KEY_NAME}` placeholder and recorded in the env file
 - **Numbers**, **booleans**, **null** → left as-is in the template (not environment-specific)
-- Key names are derived from the JSON path (`database.password` → `DATABASE_PASSWORD`)
+- Key names are derived from the key path (`database.password` → `DATABASE_PASSWORD`)
 
 ## Install
 
@@ -27,14 +27,15 @@ go build -o config2template .
 ## Usage
 
 ```bash
-config2template --input config.json [--output config.json.tpl] [--env config.json.env]
+config2template --input config.json [--output config.json.tpl] [--env config.json.env] [--format json|yaml|toml]
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--input` | *(required)* | Input JSON config file |
+| `--input` | *(required)* | Input config file (.json, .yaml/.yml, .toml) |
 | `--output` | `<input>.tpl` | Output template file |
 | `--env` | `<input>.env` | Output env vars file |
+| `--format` | *(auto from ext)* | Force format: `json`, `yaml`, `toml` |
 
 ## Example
 
@@ -76,9 +77,55 @@ DATABASE_PASSWORD=s3cr3t
 
 Commit `config.json.tpl` to version control. Keep `config.json.env` out of the repo (add it to `.gitignore`).
 
+## YAML example
+
+**Input** `config.yaml`:
+```yaml
+database:
+  host: db.example.com
+  port: 5432
+  password: s3cr3t
+api_key: sk-abc123
+debug: false
+```
+
+**Output** `config.yaml.tpl`:
+```yaml
+api_key: ${API_KEY}
+database:
+    host: ${DATABASE_HOST}
+    password: ${DATABASE_PASSWORD}
+    port: 5432
+debug: false
+```
+
+## TOML example
+
+**Input** `config.toml`:
+```toml
+api_key = "sk-abc123"
+debug = false
+
+[database]
+host = "db.example.com"
+port = 5432
+password = "s3cr3t"
+```
+
+**Output** `config.toml.tpl`:
+```toml
+api_key = "${API_KEY}"
+debug = false
+
+[database]
+  host = "${DATABASE_HOST}"
+  password = "${DATABASE_PASSWORD}"
+  port = 5432
+```
+
 ## Supported formats
 
 - [x] JSON
-- [ ] YAML *(planned)*
-- [ ] TOML *(planned)*
+- [x] YAML
+- [x] TOML
 - [ ] .env *(planned)*
