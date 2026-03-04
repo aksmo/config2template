@@ -16,9 +16,10 @@ import (
 type Format string
 
 const (
-	JSON Format = "json"
-	YAML Format = "yaml"
-	TOML Format = "toml"
+	JSON   Format = "json"
+	YAML   Format = "yaml"
+	TOML   Format = "toml"
+	DotEnv Format = "env"
 )
 
 // Detect infers the format from the file extension.
@@ -30,8 +31,10 @@ func Detect(filename string) (Format, error) {
 		return YAML, nil
 	case ".toml":
 		return TOML, nil
+	case ".env":
+		return DotEnv, nil
 	default:
-		return "", fmt.Errorf("unsupported extension %q (use .json, .yaml/.yml, or .toml)", filepath.Ext(filename))
+		return "", fmt.Errorf("unsupported extension %q (use .json, .yaml/.yml, .toml, or .env)", filepath.Ext(filename))
 	}
 }
 
@@ -48,6 +51,8 @@ func Parse(data []byte, f Format) (map[string]interface{}, error) {
 		var out map[string]interface{}
 		_, err := toml.Decode(string(data), &out)
 		return out, err
+	case DotEnv:
+		return parseDotenv(data)
 	default:
 		return nil, fmt.Errorf("unknown format: %s", f)
 	}
@@ -70,6 +75,8 @@ func Serialize(data map[string]interface{}, f Format) ([]byte, error) {
 			return nil, err
 		}
 		return buf.Bytes(), nil
+	case DotEnv:
+		return serializeDotenv(data)
 	default:
 		return nil, fmt.Errorf("unknown format: %s", f)
 	}

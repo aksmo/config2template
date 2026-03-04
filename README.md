@@ -32,10 +32,10 @@ config2template --input config.json [--output config.json.tpl] [--env config.jso
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--input` | *(required)* | Input config file (.json, .yaml/.yml, .toml) |
+| `--input` | *(required)* | Input config file (.json, .yaml/.yml, .toml, .env) |
 | `--output` | `<input>.tpl` | Output template file |
 | `--env` | `<input>.env` | Output env vars file |
-| `--format` | *(auto from ext)* | Force format: `json`, `yaml`, `toml` |
+| `--format` | *(auto from ext)* | Force format: `json`, `yaml`, `toml`, `env` |
 
 ## Example
 
@@ -123,9 +123,32 @@ debug = false
   port = 5432
 ```
 
+## .env example
+
+**Input** `.env`:
+```
+# App secrets
+DB_HOST=db.example.com
+DB_PASSWORD=s3cr3t
+API_KEY="sk-abc123"
+export STRIPE_KEY=sk_live_xyz
+DEBUG=false
+```
+
+**Output** `.env.tpl`:
+```
+API_KEY=${API_KEY}
+DB_HOST=${DB_HOST}
+DB_PASSWORD=${DB_PASSWORD}
+DEBUG=${DEBUG}
+STRIPE_KEY=${STRIPE_KEY}
+```
+
+Parser supports: bare values, `"double"` and `'single'` quotes, `export KEY=value`, inline `# comments`, and blank lines.
+
 ## Supported formats
 
 - [x] JSON
 - [x] YAML
 - [x] TOML
-- [ ] .env *(planned)*
+- [x] .env
